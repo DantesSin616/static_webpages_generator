@@ -1,6 +1,6 @@
 from enum import Enum
 
-class TextType(Enum):
+class TextType(Enum): # class type to specify between different types of tags 
     TEXT = "text"
     BOLD = "bold"
     ITALIC = "italic"
@@ -15,7 +15,7 @@ class TextNode:
         self.text_type = text_type
         self.url = url
 
-    def __eq__(self, other):
+    def __eq__(self, other): # it compares one node to another to check for nuances 
         if not isinstance(other, TextNode):
             return False
         return (

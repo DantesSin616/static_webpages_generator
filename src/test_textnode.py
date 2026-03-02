@@ -1,7 +1,5 @@
 import unittest
-
 from textnode import TextNode, TextType
-
 
 class TestTextNode(unittest.TestCase):
     def test_eq(self):
@@ -16,7 +14,7 @@ class TestTextNode(unittest.TestCase):
 
     def test_not_eq_url(self):
         node = TextNode("This is a node", TextType.LINK, "https://ignotus.dev")
-        node2 = TextNode("This is a node",TextType.LINK, None)
+        node2 = TextNode("This is a node", TextType.LINK, None)
         self.assertNotEqual(node, node2)
 
     def test_eq_with_url(self):
