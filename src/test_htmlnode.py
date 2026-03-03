@@ -2,9 +2,9 @@ import os
 import sys
 
 # make sure the directory above src (project root) is on the import path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from htmlnode import HtmlNode
+from htmlnode import HtmlNode, LeafNode
 
 
 def test_props_to_html_none():
@@ -36,6 +36,31 @@ def test_repr():
     node = HtmlNode(tag="p", value="hello", children=[], props={"style": "color:red"})
     expected = "HtmlNode(tag='p', value='hello', children=[], props={'style': 'color:red'})"
     assert repr(node) == expected
+
+
+def test_leafnode_to_html_text_only():
+    leaf = LeafNode(tag=None, value="just text")
+    assert leaf.to_html() == "just text"
+
+
+def test_leafnode_to_html_with_tag_and_props():
+    leaf = LeafNode(tag="span", value="hi", props={"class": "greet"})
+    assert leaf.to_html() == '<span class="greet">hi</span>'
+
+
+def test_leafnode_to_html_missing_value_raises():
+    leaf = LeafNode(tag="div", value=None)
+    try:
+        leaf.to_html()
+        assert False, "Expected ValueError when value is None"
+    except ValueError as e:
+        assert str(e) == "LeafNode must have a value"
+
+
+def test_leafnode_repr():
+    leaf = LeafNode(tag="b", value="bold", props={"id": "x"})
+    expected = "LeafNode(tag='b', value='bold', props={'id': 'x'})"
+    assert repr(leaf) == expected
 
 
 if __name__ == "__main__":
