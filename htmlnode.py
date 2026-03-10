@@ -1,4 +1,4 @@
-from textnode import TextType
+from src.textnode import TextType
 
 
 class HtmlNode:
@@ -42,13 +42,18 @@ class LeafNode(HtmlNode):
 
 
     def to_html(self):
-        # check for required value
+        # check for required value unless tag is a void element
+        void_elements = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
+        if self.tag is None:
+            if self.value is None:
+                raise ValueError("LeafNode must have a value")
+            return self.value
+
+        if self.tag in void_elements:
+            return f"<{self.tag}{self.props_to_html()} />"
+
         if self.value is None:
             raise ValueError("LeafNode must have a value")
-
-        # if tag is None, returns it as flat text
-        if self.tag is None:
-            return self.value
 
         return f"<{self.tag}{self.props_to_html()}>{self.value}</{self.tag}>"
 
@@ -88,5 +93,28 @@ class ParentNode(HtmlNode):
 
 
 def text_node_to_html_node(text_node):
-    if text not in TextType:
-        raise ValueError("text must be a valid TextType")
+    import html
+
+    # If not a TextNode, just escape and return as text
+    if not hasattr(text_node, "text_type"):
+        return LeafNode(None, html.escape(str(getattr(text_node, "text", text_node))))
+
+    ttype = text_node.text_type
+
+    if ttype == TextType.TEXT:
+        return LeafNode(None, text_node.text)
+    if ttype == TextType.BOLD:
+        return LeafNode("b", text_node.text)
+    if ttype == TextType.ITALIC:
+        return LeafNode("i", text_node.text)
+    if ttype == TextType.CODE:
+        return LeafNode("code", text_node.text)
+    if ttype == TextType.LINK:
+        return LeafNode("a", text_node.text, props={"href": getattr(text_node, "url") or ""})
+    if ttype == TextType.IMAGE:
+        return LeafNode("img", "", props={
+            "src": getattr(text_node, "url") or "",
+            "alt": text_node.text,
+        })
+    # Raise exception for unknown types
+    raise ValueError(f"Unknown TextType: {ttype}")
