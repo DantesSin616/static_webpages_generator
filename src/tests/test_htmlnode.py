@@ -3,11 +3,15 @@ import sys
 import unittest
 
 # make sure the directory above src (project root) is on the import path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from html_delimeter import split_nodes_delimeter
-from htmlnode import HtmlNode, LeafNode, ParentNode, text_node_to_html_node
-from src.textnode import TextNode, TextType
+from src.utils.tools_html import (
+    split_nodes_delimeter,
+    extract_markdown_images,
+    extract_markdown_links,
+)
+from src.nodes.htmlnode import HtmlNode, LeafNode, ParentNode, text_node_to_html_node
+from src.nodes.textnode import TextNode, TextType
 
 
 class TestHtmlNode(unittest.TestCase):
@@ -189,7 +193,7 @@ class TestHtmlNode(unittest.TestCase):
     def test_split_nodes_valid_delimiter(self):
         old_nodes = [TextNode("Hello, **world**!", TextType.TEXT)]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.TEXT)
+        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
         expected = [
             TextNode("Hello, ", TextType.TEXT),
             TextNode("world", TextType.BOLD),
@@ -209,19 +213,19 @@ class TestHtmlNode(unittest.TestCase):
     def test_split_nodes_empty_text(self):
         old_nodes = [TextNode("", TextType.TEXT)]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.TEXT)
+        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
         self.assertEqual(result, [])
 
     def test_split_nodes_no_delimiter(self):
         old_nodes = [TextNode("Hello, world!", TextType.TEXT)]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.TEXT)
+        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
         self.assertEqual(result, [TextNode("Hello, world!", TextType.TEXT)])
 
     def test_split_nodes_multiple_delimiters(self):
         old_nodes = [TextNode("**Hello**, **world**!", TextType.TEXT)]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.TEXT)
+        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
         expected = [
             TextNode("", TextType.TEXT),
             TextNode("Hello", TextType.BOLD),
@@ -234,7 +238,7 @@ class TestHtmlNode(unittest.TestCase):
     def test_split_nodes_different_delimiter(self):
         old_nodes = [TextNode("Hello, __world__!", TextType.TEXT)]
         delimiter = "__"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.TEXT)
+        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
         expected = [
             TextNode("Hello, ", TextType.TEXT),
             TextNode("world", TextType.BOLD),
@@ -248,7 +252,7 @@ class TestHtmlNode(unittest.TestCase):
             TextNode("This is plain text.", TextType.TEXT),
         ]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.TEXT)
+        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
         expected = [
             TextNode("Hello, ", TextType.TEXT),
             TextNode("world", TextType.BOLD),
@@ -264,7 +268,7 @@ class TestHtmlNode(unittest.TestCase):
             HtmlNode("</div>"),
         ]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.TEXT)
+        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
         expected = [
             HtmlNode("<div>"),
             TextNode("Hello, ", TextType.TEXT),
@@ -273,3 +277,87 @@ class TestHtmlNode(unittest.TestCase):
             HtmlNode("</div>"),
         ]
         self.assertEqual(result, expected)
+
+    # Tests for extract_markdown_images
+    def test_extract_markdown_images_basic(self):
+        text = "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        matches = extract_markdown_images(text)
+        self.assertEqual(matches, [("image", "https://i.imgur.com/zjjcJKZ.png")])
+
+    def test_extract_markdown_images_multiple(self):
+        text = "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)"
+        matches = extract_markdown_images(text)
+        self.assertEqual(
+            matches,
+            [
+                ("image", "https://i.imgur.com/zjjcJKZ.png"),
+                ("second image", "https://i.imgur.com/3elNhQu.png"),
+            ],
+        )
+
+    def test_extract_markdown_images_none(self):
+        text = "This is simply some text without images."
+        matches = extract_markdown_images(text)
+        self.assertEqual(matches, [])
+
+    def test_extract_markdown_images_empty(self):
+        text = ""
+        matches = extract_markdown_images(text)
+        self.assertEqual(matches, [])
+
+    def test_extract_markdown_images_with_links(self):
+        text = "This is a link [link text](https://www.google.com) and an image ![img](https://i.imgur.com/123.png)"
+        matches = extract_markdown_images(text)
+        self.assertEqual(matches, [("img", "https://i.imgur.com/123.png")])
+
+    def test_extract_markdown_images_no_url(self):
+        text = "An image with no url ![alt]()"
+        matches = extract_markdown_images(text)
+        self.assertEqual(matches, [("alt", "")])
+
+    def test_extract_markdown_images_no_alt(self):
+        text = "An image with no alt text ![](https://url.com)"
+        matches = extract_markdown_images(text)
+        self.assertEqual(matches, [("", "https://url.com")])
+
+    # Tests for extract_markdown_links
+    def test_extract_markdown_links_basic(self):
+        text = "This is text with a [link](https://boot.dev)"
+        matches = extract_markdown_links(text)
+        self.assertEqual(matches, [("link", "https://boot.dev")])
+
+    def test_extract_markdown_links_multiple(self):
+        text = "This is text with a [link](https://boot.dev) and [another link](https://blog.boot.dev)"
+        matches = extract_markdown_links(text)
+        self.assertEqual(
+            matches,
+            [
+                ("link", "https://boot.dev"),
+                ("another link", "https://blog.boot.dev"),
+            ],
+        )
+
+    def test_extract_markdown_links_none(self):
+        text = "Text without any links here."
+        matches = extract_markdown_links(text)
+        self.assertEqual(matches, [])
+
+    def test_extract_markdown_links_empty(self):
+        text = ""
+        matches = extract_markdown_links(text)
+        self.assertEqual(matches, [])
+
+    def test_extract_markdown_links_with_images(self):
+        text = "Here is an image ![img](url) and a [link](url2)"
+        matches = extract_markdown_links(text)
+        self.assertEqual(matches, [("link", "url2")])
+
+    def test_extract_markdown_links_no_url(self):
+        text = "Here is a [link]() with no URL"
+        matches = extract_markdown_links(text)
+        self.assertEqual(matches, [("link", "")])
+
+    def test_extract_markdown_links_no_text(self):
+        text = "Here is a link with no text [](https://boot.dev)"
+        matches = extract_markdown_links(text)
+        self.assertEqual(matches, [("", "https://boot.dev")])

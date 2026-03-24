@@ -1,4 +1,4 @@
-from src.textnode import TextType
+from src.nodes.textnode import TextType
 
 
 class HtmlNode:
@@ -30,6 +30,16 @@ class HtmlNode:
         return (
             f"HtmlNode(tag={self.tag!r}, value={self.value!r}, "
             f"children={self.children!r}, props={self.props!r})"
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, HtmlNode):
+            return False
+        return (
+            self.tag == other.tag
+            and self.value == other.value
+            and self.children == other.children
+            and self.props == other.props
         )
 
 

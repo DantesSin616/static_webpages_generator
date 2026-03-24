@@ -1,4 +1,4 @@
-from textnode import TextNode
+from src.nodes.textnode import TextNode
 
 def main():
     new_node = TextNode(
