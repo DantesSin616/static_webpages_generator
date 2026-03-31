@@ -7,6 +7,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 
 from src.utils.tools_html import (
     split_nodes_delimeter,
+    split_nodes_images,
+    split_nodes_link,
     extract_markdown_images,
     extract_markdown_links,
 )
@@ -361,3 +363,70 @@ class TestHtmlNode(unittest.TestCase):
         text = "Here is a link with no text [](https://boot.dev)"
         matches = extract_markdown_links(text)
         self.assertEqual(matches, [("", "https://boot.dev")])
+
+    # Tests for split_nodes_images
+    def test_split_images(self):
+        node = TextNode(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_images([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.TEXT),
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and another ", TextType.TEXT),
+                TextNode("second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"),
+            ],
+            new_nodes,
+        )
+
+    def test_split_images_no_images(self):
+        node = TextNode("Just plain text", TextType.TEXT)
+        new_nodes = split_nodes_images([node])
+        self.assertEqual(new_nodes, [TextNode("Just plain text", TextType.TEXT)])
+
+    def test_split_images_empty_text(self):
+        node = TextNode("", TextType.TEXT)
+        new_nodes = split_nodes_images([node])
+        self.assertEqual(new_nodes, [])
+
+    def test_split_images_mixed_nodes(self):
+        old_nodes = [HtmlNode("<div>"), TextNode("A ![img](url)", TextType.TEXT), HtmlNode("</div>")]
+        new_nodes = split_nodes_images(old_nodes)
+        expected = [HtmlNode("<div>"), TextNode("A ", TextType.TEXT), TextNode("img", TextType.IMAGE, "url"), HtmlNode("</div>")]
+        self.assertEqual(new_nodes, expected)
+
+    # Tests for split_nodes_link
+    def test_split_links_basic(self):
+        node = TextNode("This is a [link](https://boot.dev) here", TextType.TEXT)
+        new_nodes = split_nodes_link([node])
+        expected = [TextNode("This is a ", TextType.TEXT), TextNode("link", TextType.LINK, "https://boot.dev"), TextNode(" here", TextType.TEXT)]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_links_no_links(self):
+        node = TextNode("No links here", TextType.TEXT)
+        new_nodes = split_nodes_link([node])
+        self.assertEqual(new_nodes, [TextNode("No links here", TextType.TEXT)])
+
+    def test_split_links_multiple(self):
+        node = TextNode("One [a](u1) and [b](u2)", TextType.TEXT)
+        new_nodes = split_nodes_link([node])
+        expected = [TextNode("One ", TextType.TEXT), TextNode("a", TextType.LINK, "u1"), TextNode(" and ", TextType.TEXT), TextNode("b", TextType.LINK, "u2")]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_links_with_image_present(self):
+        node = TextNode("Image ![img](url) and a [link](url2)", TextType.TEXT)
+        new_nodes = split_nodes_link([node])
+        expected = [TextNode("Image ![img](url) and a ", TextType.TEXT), TextNode("link", TextType.LINK, "url2")]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_links_empty_text(self):
+        node = TextNode("", TextType.TEXT)
+        new_nodes = split_nodes_link([node])
+        self.assertEqual(new_nodes, [])
+
+    def test_split_links_already_link_node(self):
+        node = TextNode("link text", TextType.LINK, "http://example.com")
+        new_nodes = split_nodes_link([node])
+        self.assertEqual(new_nodes, [node])
