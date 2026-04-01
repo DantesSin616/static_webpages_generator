@@ -144,3 +144,29 @@ def extract_markdown_links(text):
     pattern = r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)"
     link_matches = re.findall(pattern, text)
     return link_matches
+
+
+def text_to_textnodes(text):
+    # Convert a raw markdown-flavored string into a list of TextNode objects
+    if text is None:
+        return []
+
+    # Start with a single plain text node
+    nodes = [TextNode(text, TextType.TEXT)]
+
+    # Code spans first so images/links inside code are not tokenized
+    nodes = split_nodes_delimeter(nodes, "`", TextType.CODE)
+
+    # Extract images next so they don't get mistaken for links or formatting
+    nodes = split_nodes_images(nodes)
+
+    # Then extract links (link regex avoids matching images)
+    nodes = split_nodes_link(nodes)
+
+    # Bold before italic to avoid conflicts with single-star parsing
+    nodes = split_nodes_delimeter(nodes, "**", TextType.BOLD)
+
+    # Italic (single star)
+    nodes = split_nodes_delimeter(nodes, "*", TextType.ITALIC)
+
+    return nodes

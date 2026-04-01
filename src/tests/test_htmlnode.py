@@ -9,6 +9,7 @@ from src.utils.tools_html import (
     split_nodes_delimeter,
     split_nodes_images,
     split_nodes_link,
+    text_to_textnodes,
     extract_markdown_images,
     extract_markdown_links,
 )
@@ -430,3 +431,60 @@ class TestHtmlNode(unittest.TestCase):
         node = TextNode("link text", TextType.LINK, "http://example.com")
         new_nodes = split_nodes_link([node])
         self.assertEqual(new_nodes, [node])
+
+    # Additional tests for edge cases and combined parsing
+    def test_split_images_adjacent(self):
+        node = TextNode("![a](u1)![b](u2)", TextType.TEXT)
+        new_nodes = split_nodes_images([node])
+        expected = [
+            TextNode("a", TextType.IMAGE, "u1"),
+            TextNode("b", TextType.IMAGE, "u2"),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_images_empty_url(self):
+        node = TextNode("A ![alt]() end", TextType.TEXT)
+        new_nodes = split_nodes_images([node])
+        expected = [
+            TextNode("A ", TextType.TEXT),
+            TextNode("alt", TextType.IMAGE, ""),
+            TextNode(" end", TextType.TEXT),
+        ]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_images_only_image(self):
+        node = TextNode("![img](url)", TextType.TEXT)
+        new_nodes = split_nodes_images([node])
+        expected = [TextNode("img", TextType.IMAGE, "url")]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_links_adjacent(self):
+        node = TextNode("[a](u1)[b](u2)", TextType.TEXT)
+        new_nodes = split_nodes_link([node])
+        expected = [TextNode("a", TextType.LINK, "u1"), TextNode("b", TextType.LINK, "u2")]
+        self.assertEqual(new_nodes, expected)
+
+    def test_split_links_empty_url(self):
+        node = TextNode("Here is a [link]() end", TextType.TEXT)
+        new_nodes = split_nodes_link([node])
+        expected = [TextNode("Here is a ", TextType.TEXT), TextNode("link", TextType.LINK, ""), TextNode(" end", TextType.TEXT)]
+        self.assertEqual(new_nodes, expected)
+
+    def test_text_to_textnodes_complex(self):
+        text = "Hello **bold** *italic* `code` [link](u) ![img](v)"
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("Hello ", TextType.TEXT),
+            TextNode("bold", TextType.BOLD),
+            TextNode(" ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" ", TextType.TEXT),
+            TextNode("code", TextType.CODE),
+            TextNode(" ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "u"),
+            TextNode("img", TextType.IMAGE, "v"),
+        ]
+        self.assertEqual(nodes, expected)
+
+    def test_text_to_textnodes_none(self):
+        self.assertEqual(text_to_textnodes(None), [])
