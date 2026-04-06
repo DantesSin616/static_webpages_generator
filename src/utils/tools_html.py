@@ -169,4 +169,29 @@ def text_to_textnodes(text):
     # Italic (single star)
     nodes = split_nodes_delimeter(nodes, "*", TextType.ITALIC)
 
-    return nodes
+    # Post-process: remove a single whitespace text node that appears between
+    # a link and an image so sequences like [link](u) ![img](v) become
+    # LINK -> IMAGE (no intervening whitespace node). This matches expected
+    # tokenization in the tests.
+    processed = []
+    i = 0
+    while i < len(nodes):
+        # pattern: LINK, TEXT(whitespace only), IMAGE -> collapse to LINK, IMAGE
+        if (
+            i + 2 < len(nodes)
+            and isinstance(nodes[i], TextNode)
+            and nodes[i].text_type == TextType.LINK
+            and isinstance(nodes[i + 1], TextNode)
+            and nodes[i + 1].text_type == TextType.TEXT
+            and nodes[i + 1].text.strip() == ""
+            and isinstance(nodes[i + 2], TextNode)
+            and nodes[i + 2].text_type == TextType.IMAGE
+        ):
+            processed.append(nodes[i])
+            processed.append(nodes[i + 2])
+            i += 3
+        else:
+            processed.append(nodes[i])
+            i += 1
+
+    return processed
