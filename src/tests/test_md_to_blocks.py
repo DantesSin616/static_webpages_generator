@@ -5,7 +5,7 @@ import unittest
 # ensure project root is on import path (like other tests)
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from src.utils.markdow_html import markdown_to_blocks
+from src.utils.markdown_html import markdown_to_blocks
 
 
 class TestMarkdownToBlocks(unittest.TestCase):
