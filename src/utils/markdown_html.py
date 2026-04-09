@@ -1,4 +1,13 @@
-from src.nodes.htmlnode import HtmlNode, LeafNode, ParentNode
+from typing import Optional, List, Dict
+import re
+
+from src.nodes.textnode import BlockType
+
+
+_SPLIT_RE = re.compile(r"\n\s*\n+")
+_ORDERED_LIST_RE = re.compile(r"^\d+\.\s+")
+_UNORDERED_LIST_RE = re.compile(r"^[-+*]\s+")
+
 
 def markdown_to_blocks(md_text: Optional[str]) -> List[str]:
     """Split markdown text into blocks separated by one or more blank lines.
@@ -60,5 +69,4 @@ def block_to_block_type(md_block: Optional[str]) -> BlockType:
     return BlockType.PARAGRAPH
 
 
-def makdown_to_html_node():
-    return 1
+# def markdown_to_html_node():

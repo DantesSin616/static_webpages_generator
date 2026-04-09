@@ -11,7 +11,7 @@ class TextType(Enum): # class type to specify between different types of tags
 class BlockType(Enum):
     PARAGRAPH = "paragraph"
     HEADING = "heading"
-    CODE = "code"
+    CODE = "code_block"
     QUOTE = "quote"
     UNORDERED_LIST = "ul"
     ORDERED_LIST = "ol"

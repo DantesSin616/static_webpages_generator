@@ -5,7 +5,7 @@ This module follows the repository coding pattern: module-level compiled
 regex constants, explicit typing, and specific exception types.
 """
 
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import re
 from src.nodes.textnode import TextNode, TextType
