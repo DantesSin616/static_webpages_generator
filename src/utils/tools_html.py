@@ -1,10 +1,38 @@
-import re
+"""Helpers for converting markdown-flavored inline text into `TextNode`
+objects used by the rest of the system.
 
+This module follows the repository coding pattern: module-level compiled
+regex constants, explicit typing, and specific exception types.
+"""
+
+from typing import List, Tuple
+
+import re
 from src.nodes.textnode import TextNode, TextType
 
 
-def split_nodes_delimeter(old_nodes, delimeter, text_type):
-    new_nodes = []
+__all__ = [
+    "split_nodes_delimeter",
+    "split_nodes_images",
+    "split_nodes_link",
+    "extract_markdown_images",
+    "extract_markdown_links",
+    "text_to_textnodes",
+]
+
+
+# Precompiled regexes
+_IMAGE_RE = re.compile(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)")
+_LINK_RE = re.compile(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)")
+
+
+def split_nodes_delimeter(old_nodes: List[TextNode], delimeter: str, text_type: TextType) -> List[TextNode]:
+    """Split text nodes on a delimiter and wrap delimited parts with
+    `TextType`.
+
+    Raises ``ValueError`` if delimiters are unbalanced.
+    """
+    new_nodes: List[TextNode] = []
 
     for node in old_nodes:
         # Skip non-text nodes (HTML nodes, etc.)
@@ -21,7 +49,7 @@ def split_nodes_delimeter(old_nodes, delimeter, text_type):
 
         # check for unclosed delimiters
         if len(parts) % 2 == 0:
-            raise Exception("Invalid delimeter syntax: unclosed delimeter")
+            raise ValueError(f"Invalid delimiter syntax: unclosed delimiter '{delimeter}'")
 
         # Process each part
         for i, part in enumerate(parts):
@@ -34,8 +62,11 @@ def split_nodes_delimeter(old_nodes, delimeter, text_type):
     return new_nodes
 
 
-def split_nodes_images(old_nodes):
-    new_nodes = []
+def split_nodes_images(old_nodes: List[TextNode]) -> List[TextNode]:
+    """Extract markdown image spans from text nodes and replace them with
+    `TextNode` objects having ``TextType.IMAGE``.
+    """
+    new_nodes: List[TextNode] = []
 
     for node in old_nodes:
         # Skips non-text nodes
@@ -51,9 +82,7 @@ def split_nodes_images(old_nodes):
         if not node.text:
             continue
 
-        # Find markdown image spans and split the text node into pieces
-        pattern = r"!\[([^\[\]]*)\]\(([^\(\)]*)\)"
-        matches = list(re.finditer(pattern, node.text))
+        matches = list(_IMAGE_RE.finditer(node.text))
 
         # If no image markdown found, keep the original node
         if not matches:
@@ -69,8 +98,7 @@ def split_nodes_images(old_nodes):
                 new_nodes.append(TextNode(pre_text, node.text_type))
 
             # image node: alt text in .text, url in .url
-            alt_text = m.group(1)
-            url = m.group(2)
+            alt_text, url = m.group(1), m.group(2)
             new_nodes.append(TextNode(alt_text, TextType.IMAGE, url=url))
 
             last_idx = end
@@ -83,8 +111,11 @@ def split_nodes_images(old_nodes):
     return new_nodes
 
 
-def split_nodes_link(old_nodes):
-    new_nodes = []
+def split_nodes_link(old_nodes: List[TextNode]) -> List[TextNode]:
+    """Extract markdown link spans from text nodes and replace them with
+    `TextNode` objects having ``TextType.LINK``.
+    """
+    new_nodes: List[TextNode] = []
 
     for node in old_nodes:
         # Skip non-text nodes
@@ -100,9 +131,7 @@ def split_nodes_link(old_nodes):
         if not node.text:
             continue
 
-        # Find markdown link spans and split the text node into pieces
-        pattern = r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)"
-        matches = list(re.finditer(pattern, node.text))
+        matches = list(_LINK_RE.finditer(node.text))
 
         # If no link markdown found, keep the original node
         if not matches:
@@ -118,8 +147,7 @@ def split_nodes_link(old_nodes):
                 new_nodes.append(TextNode(pre_text, node.text_type))
 
             # link node: link text in .text, url in .url
-            link_text = m.group(1)
-            url = m.group(2)
+            link_text, url = m.group(1), m.group(2)
             new_nodes.append(TextNode(link_text, TextType.LINK, url=url))
 
             last_idx = end
@@ -132,27 +160,27 @@ def split_nodes_link(old_nodes):
     return new_nodes
 
 
-def extract_markdown_images(text):
-    # regex pattern for images files with its alt text
-    pattern = r"!\[([^\[\]]*)\]\(([^\(\)]*)\)"
-    img_matches = re.findall(pattern, text)
-    return img_matches
+def extract_markdown_images(text: str) -> List[Tuple[str, str]]:
+    """Return a list of (alt_text, url) for images found in the text."""
+    return _IMAGE_RE.findall(text)
 
 
-def extract_markdown_links(text):
-    # regex patter for regular links
-    pattern = r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)"
-    link_matches = re.findall(pattern, text)
-    return link_matches
+def extract_markdown_links(text: str) -> List[Tuple[str, str]]:
+    """Return a list of (link_text, url) for links found in the text."""
+    return _LINK_RE.findall(text)
 
 
-def text_to_textnodes(text):
-    # Convert a raw markdown-flavored string into a list of TextNode objects
+def text_to_textnodes(text: Optional[str]) -> List[TextNode]:
+    """Convert a raw markdown-flavored string into a list of TextNode objects.
+
+    The function applies tokenization in a deterministic order to avoid
+    ambiguous parses.
+    """
     if text is None:
         return []
 
     # Start with a single plain text node
-    nodes = [TextNode(text, TextType.TEXT)]
+    nodes: List[TextNode] = [TextNode(text, TextType.TEXT)]
 
     # Code spans first so images/links inside code are not tokenized
     nodes = split_nodes_delimeter(nodes, "`", TextType.CODE)
@@ -173,7 +201,7 @@ def text_to_textnodes(text):
     # a link and an image so sequences like [link](u) ![img](v) become
     # LINK -> IMAGE (no intervening whitespace node). This matches expected
     # tokenization in the tests.
-    processed = []
+    processed: List[TextNode] = []
     i = 0
     while i < len(nodes):
         # pattern: LINK, TEXT(whitespace only), IMAGE -> collapse to LINK, IMAGE

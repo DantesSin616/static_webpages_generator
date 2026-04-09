@@ -8,6 +8,14 @@ class TextType(Enum): # class type to specify between different types of tags
     LINK = "link"
     IMAGE = "image"
 
+class BlockType(Enum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE = "quote"
+    UNORDERED_LIST = "ul"
+    ORDERED_LIST = "ol"
+
 
 class TextNode: 
     def __init__(self, text, text_type, url=None):
