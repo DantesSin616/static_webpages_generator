@@ -79,14 +79,57 @@ def markdown_to_html_node(markdown):
     """
 
     def text_to_children(text: str):
-        """Convert a plain text string into a list of HtmlNode children.
+        # Convert a plain text string into a list of HtmlNode children.
 
-        This minimal implementation does not perform inline markdown
-        parsing; it simply returns a single `LeafNode` containing the
-        raw text. Replace with an inline parser to support bold/italic/code
-        spans and links.
-        """
-        return [LeafNode(None, text)]
+        # Inline parsing for **bold**, _italic_, and `code` spans.
+        # This is a simple left-to-right non-recursive parser.
+        nodes = []
+        if not text:
+            return nodes
+
+        # Patterns for inline elements
+        bold_re = re.compile(r"\*\*(.+?)\*\*")
+        italic_re = re.compile(r"\*([^*]+?)\*")
+        code_re = re.compile(r"`([^`]+?)`")
+
+        s = text
+        while s:
+            # Find next match among patterns
+            next_match = None
+            next_kind = None
+            for kind, pattern in (("bold", bold_re), ("italic", italic_re), ("code", code_re)):
+                m = pattern.search(s)
+                if m:
+                    if next_match is None or m.start() < next_match.start():
+                        next_match = m
+                        next_kind = kind
+
+            if not next_match:
+                # remainder is plain text
+                tn = TextNode(s, TextType.TEXT)
+                nodes.append(text_node_to_html_node(tn))
+                break
+
+            # text before match
+            if next_match.start() > 0:
+                pre = s[: next_match.start()]
+                tn = TextNode(pre, TextType.TEXT)
+                nodes.append(text_node_to_html_node(tn))
+
+            inner = next_match.group(1)
+            if next_kind == "bold":
+                tn = TextNode(inner, TextType.BOLD)
+                nodes.append(text_node_to_html_node(tn))
+            elif next_kind == "italic":
+                tn = TextNode(inner, TextType.ITALIC)
+                nodes.append(text_node_to_html_node(tn))
+            elif next_kind == "code":
+                tn = TextNode(inner, TextType.CODE)
+                nodes.append(text_node_to_html_node(tn))
+
+            s = s[next_match.end() :]
+
+        return nodes
 
     blocks = markdown_to_blocks(markdown)
     nodes = []
