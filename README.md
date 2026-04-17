@@ -13,9 +13,11 @@ A simple static webpage generator built in Python. This project converts markdow
 ## Usage
 
 ### Prerequisites
+
 - Python 3.10 or higher.
 
 ### Generating the Site
+
 To generate the static site, run the provided shell script from the repository root:
 
 ```bash
@@ -23,10 +25,11 @@ To generate the static site, run the provided shell script from the repository r
 ```
 
 This script will:
-1.  Clean the `public/` directory.
-2.  Copy all static assets from `static/` to `public/`.
-3.  Recursively crawl the `content/` directory and convert all `.md` files into `.html` files using the template at `src/template.html`.
-4.  Write the generated HTML files to `public/` while maintaining the original directory structure.
+
+1. Clean the `public/` directory.
+2. Copy all static assets from `static/` to `public/`.
+3. Recursively crawl the `content/` directory and convert all `.md` files into `.html` files using the template at `src/template.html`.
+4. Write the generated HTML files to `public/` while maintaining the original directory structure.
 
 ### Running Tests
 
@@ -48,13 +51,16 @@ To run the project's unit tests:
 ## Implementation Details
 
 ### Recursive Page Generation
+
 The generator uses `generate_pages_recursive(dir_path_content, template_path, dest_dir_path)` to walk through the `content/` directory. For every `.md` file found, it:
-1.  Extracts the title (the first H1 header found in the file).
-2.  Converts the markdown content into HTML using `markdown_to_html_node`.
-3.  Injects the title and content into the `src/template.html` placeholders (`{{ Title }}` and `{{ Content }}`).
-4.  Saves the resulting HTML file in the corresponding location within the `public/` directory.
+
+1. Extracts the title (the first H1 header found in the file).
+2. Converts the markdown content into HTML using `markdown_to_html_node`.
+3. Injects the title and content into the `src/template.html` placeholders (`{{ Title }}` and `{{ Content }}`).
+4. Saves the resulting HTML file in the corresponding location within the `public/` directory.
 
 ### Asset Copying
+
 The `copy_from_source_to_new_destination` function ensures that the `public/` directory is a fresh copy of `static/` before any pages are generated, preventing old assets from lingering.
 
 ## Developer Notes
