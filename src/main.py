@@ -9,30 +9,35 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main():
-    # Generate the `public/` directory by copying from `static/`.
+    # Get basepath from CLI arguments, default to "/"
+    basepath = "/"
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
+
+    # Generate the `docs/` directory by copying from `static/`.
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     static_dir = os.path.join(repo_root, "static")
     content_dir = os.path.join(repo_root, "content")
     template_path = os.path.join(repo_root, "src/template.html")
-    public_dir = os.path.join(repo_root, "public")
+    docs_dir = os.path.join(repo_root, "docs")
 
     try:
-        logging.info(f"Copying site from {static_dir} to {public_dir}")
-        copy_from_source_to_new_destination(static_dir, public_dir)
+        logging.info(f"Copying site from {static_dir} to {docs_dir}")
+        copy_from_source_to_new_destination(static_dir, docs_dir)
 
         if os.path.exists(content_dir):
-            logging.info(f"Generating pages from {content_dir} to {public_dir}")
-            generate_pages_recursive(content_dir, template_path, public_dir)
+            logging.info(f"Generating pages from {content_dir} to {docs_dir} with basepath: {basepath}")
+            generate_pages_recursive(content_dir, template_path, docs_dir, basepath)
         else:
             logging.warning(f"Content directory {content_dir} not found; skipping page generation.")
 
-        logging.info(f"Site generated at: {public_dir}")
+        logging.info(f"Site generated at: {docs_dir}")
     except Exception:
-        logging.exception("Failed to generate public directory")
+        logging.exception("Failed to generate docs directory")
         sys.exit(1)
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
     if not os.path.exists(from_path):
         raise FileNotFoundError(f"Source markdown file not found: {from_path}")
@@ -52,6 +57,10 @@ def generate_page(from_path, template_path, dest_path):
     final_html = template.replace("{{ Title }}", title)
     final_html = final_html.replace("{{ Content }}", content_html)
 
+    # Replace root-relative links with basepath
+    final_html = final_html.replace('href="/', f'href="{basepath}')
+    final_html = final_html.replace('src="/', f'src="{basepath}')
+
     dest_dir = os.path.dirname(dest_path)
     if not os.path.exists(dest_dir):
         os.makedirs(dest_dir, exist_ok=True)
@@ -60,17 +69,17 @@ def generate_page(from_path, template_path, dest_path):
         f.write(final_html)
 
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     for name in os.listdir(dir_path_content):
         path = os.path.join(dir_path_content, name)
         if os.path.isfile(path):
             if name.endswith(".md"):
                 # replace .md with .html
                 dest_path = os.path.join(dest_dir_path, name[:-3] + ".html")
-                generate_page(path, template_path, dest_path)
+                generate_page(path, template_path, dest_path, basepath)
         else:
             new_dest_dir = os.path.join(dest_dir_path, name)
-            generate_pages_recursive(path, template_path, new_dest_dir)
+            generate_pages_recursive(path, template_path, new_dest_dir, basepath)
 
 
 def copy_from_source_to_new_destination(source, destination):

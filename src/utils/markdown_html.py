@@ -70,6 +70,9 @@ def block_to_block_type(md_block: Optional[str]) -> BlockType:
     return BlockType.PARAGRAPH
 
 
+from src.utils.tools_html import text_to_textnodes
+
+
 def markdown_to_html_node(markdown):
     """Convert markdown text into a single ParentNode('div', [...]).
 
@@ -80,65 +83,15 @@ def markdown_to_html_node(markdown):
 
     def text_to_children(text: str):
         # Convert a plain text string into a list of HtmlNode children.
-
-        # Inline parsing for **bold**, _italic_, and `code` spans.
-        # This is a simple left-to-right non-recursive parser.
-        nodes = []
-        if not text:
-            return nodes
+        # Uses the centralized text_to_textnodes parser for inline logic.
 
         # Collapse newlines into spaces for inline content
         text = text.replace("\n", " ")
         while "  " in text:
             text = text.replace("  ", " ")
 
-        # Patterns for inline elements
-        bold_re = re.compile(r"\*\*(.+?)\*\*")
-        italic_re = re.compile(r"(\*|_)(.+?)\1")
-        code_re = re.compile(r"`([^`]+?)`")
-
-        s = text
-        while s:
-            # Find next match among patterns
-            next_match = None
-            next_kind = None
-            for kind, pattern in (("bold", bold_re), ("italic", italic_re), ("code", code_re)):
-                m = pattern.search(s)
-                if m:
-                    if next_match is None or m.start() < next_match.start():
-                        next_match = m
-                        next_kind = kind
-
-            if not next_match:
-                # remainder is plain text
-                tn = TextNode(s, TextType.TEXT)
-                nodes.append(text_node_to_html_node(tn))
-                break
-
-            # text before match
-            if next_match.start() > 0:
-                pre = s[: next_match.start()]
-                tn = TextNode(pre, TextType.TEXT)
-                nodes.append(text_node_to_html_node(tn))
-
-            if next_kind == "italic":
-                inner = next_match.group(2)
-            else:
-                inner = next_match.group(1)
-
-            if next_kind == "bold":
-                tn = TextNode(inner, TextType.BOLD)
-                nodes.append(text_node_to_html_node(tn))
-            elif next_kind == "italic":
-                tn = TextNode(inner, TextType.ITALIC)
-                nodes.append(text_node_to_html_node(tn))
-            elif next_kind == "code":
-                tn = TextNode(inner, TextType.CODE)
-                nodes.append(text_node_to_html_node(tn))
-
-            s = s[next_match.end() :]
-
-        return nodes
+        text_nodes = text_to_textnodes(text)
+        return [text_node_to_html_node(tn) for tn in text_nodes]
 
     blocks = markdown_to_blocks(markdown)
     nodes = []
