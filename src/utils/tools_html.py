@@ -12,7 +12,7 @@ from src.nodes.textnode import TextNode, TextType
 
 
 __all__ = [
-    "split_nodes_delimeter",
+    "split_nodes_delimiter",
     "split_nodes_images",
     "split_nodes_link",
     "extract_markdown_images",
@@ -26,7 +26,7 @@ _IMAGE_RE = re.compile(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)")
 _LINK_RE = re.compile(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)")
 
 
-def split_nodes_delimeter(old_nodes: List[TextNode], delimeter: str, text_type: TextType) -> List[TextNode]:
+def split_nodes_delimiter(old_nodes: List[TextNode], delimiter: str, text_type: TextType) -> List[TextNode]:
     """Split text nodes on a delimiter and wrap delimited parts with
     `TextType`.
 
@@ -45,11 +45,11 @@ def split_nodes_delimeter(old_nodes: List[TextNode], delimeter: str, text_type: 
             continue
 
         # split the text by the delimiter
-        parts = node.text.split(delimeter)
+        parts = node.text.split(delimiter)
 
         # check for unclosed delimiters
         if len(parts) % 2 == 0:
-            raise ValueError(f"Invalid delimiter syntax: unclosed delimiter '{delimeter}'")
+            raise ValueError(f"Invalid delimiter syntax: unclosed delimiter '{delimiter}'")
 
         # Process each part
         for i, part in enumerate(parts):
@@ -183,7 +183,7 @@ def text_to_textnodes(text: Optional[str]) -> List[TextNode]:
     nodes: List[TextNode] = [TextNode(text, TextType.TEXT)]
 
     # Code spans first so images/links inside code are not tokenized
-    nodes = split_nodes_delimeter(nodes, "`", TextType.CODE)
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
 
     # Extract images next so they don't get mistaken for links or formatting
     nodes = split_nodes_images(nodes)
@@ -192,10 +192,11 @@ def text_to_textnodes(text: Optional[str]) -> List[TextNode]:
     nodes = split_nodes_link(nodes)
 
     # Bold before italic to avoid conflicts with single-star parsing
-    nodes = split_nodes_delimeter(nodes, "**", TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
 
-    # Italic (single star)
-    nodes = split_nodes_delimeter(nodes, "*", TextType.ITALIC)
+    # Italic (single star and underscores)
+    nodes = split_nodes_delimiter(nodes, "*", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
 
     # Post-process: remove a single whitespace text node that appears between
     # a link and an image so sequences like [link](u) ![img](v) become

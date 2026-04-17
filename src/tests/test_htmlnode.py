@@ -6,7 +6,7 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 from src.utils.tools_html import (
-    split_nodes_delimeter,
+    split_nodes_delimiter,
     split_nodes_images,
     split_nodes_link,
     text_to_textnodes,
@@ -192,11 +192,11 @@ class TestHtmlNode(unittest.TestCase):
         html_node = text_node_to_html_node(node)
         self.assertEqual(html_node.props, {"src": "", "alt": "alt text"})
 
-    # Tests for split_nodes_delimeter
+    # Tests for split_nodes_delimiter
     def test_split_nodes_valid_delimiter(self):
         old_nodes = [TextNode("Hello, **world**!", TextType.TEXT)]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
+        result = split_nodes_delimiter(old_nodes, delimiter, TextType.BOLD)
         expected = [
             TextNode("Hello, ", TextType.TEXT),
             TextNode("world", TextType.BOLD),
@@ -208,27 +208,27 @@ class TestHtmlNode(unittest.TestCase):
         old_nodes = [TextNode("Hello, **world!", TextType.TEXT)]
         delimiter = "**"
         with self.assertRaises(Exception) as context:
-            split_nodes_delimeter(old_nodes, delimiter, TextType.TEXT)
+            split_nodes_delimiter(old_nodes, delimiter, TextType.TEXT)
         self.assertEqual(
-            str(context.exception), "Invalid delimeter syntax: unclosed delimeter"
+            str(context.exception), "Invalid delimiter syntax: unclosed delimiter '**'"
         )
 
     def test_split_nodes_empty_text(self):
         old_nodes = [TextNode("", TextType.TEXT)]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
+        result = split_nodes_delimiter(old_nodes, delimiter, TextType.BOLD)
         self.assertEqual(result, [])
 
     def test_split_nodes_no_delimiter(self):
         old_nodes = [TextNode("Hello, world!", TextType.TEXT)]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
+        result = split_nodes_delimiter(old_nodes, delimiter, TextType.BOLD)
         self.assertEqual(result, [TextNode("Hello, world!", TextType.TEXT)])
 
     def test_split_nodes_multiple_delimiters(self):
         old_nodes = [TextNode("**Hello**, **world**!", TextType.TEXT)]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
+        result = split_nodes_delimiter(old_nodes, delimiter, TextType.BOLD)
         expected = [
             TextNode("", TextType.TEXT),
             TextNode("Hello", TextType.BOLD),
@@ -241,7 +241,7 @@ class TestHtmlNode(unittest.TestCase):
     def test_split_nodes_different_delimiter(self):
         old_nodes = [TextNode("Hello, __world__!", TextType.TEXT)]
         delimiter = "__"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
+        result = split_nodes_delimiter(old_nodes, delimiter, TextType.BOLD)
         expected = [
             TextNode("Hello, ", TextType.TEXT),
             TextNode("world", TextType.BOLD),
@@ -255,7 +255,7 @@ class TestHtmlNode(unittest.TestCase):
             TextNode("This is plain text.", TextType.TEXT),
         ]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
+        result = split_nodes_delimiter(old_nodes, delimiter, TextType.BOLD)
         expected = [
             TextNode("Hello, ", TextType.TEXT),
             TextNode("world", TextType.BOLD),
@@ -271,7 +271,7 @@ class TestHtmlNode(unittest.TestCase):
             HtmlNode("</div>"),
         ]
         delimiter = "**"
-        result = split_nodes_delimeter(old_nodes, delimiter, TextType.BOLD)
+        result = split_nodes_delimiter(old_nodes, delimiter, TextType.BOLD)
         expected = [
             HtmlNode("<div>"),
             TextNode("Hello, ", TextType.TEXT),

@@ -87,9 +87,14 @@ def markdown_to_html_node(markdown):
         if not text:
             return nodes
 
+        # Collapse newlines into spaces for inline content
+        text = text.replace("\n", " ")
+        while "  " in text:
+            text = text.replace("  ", " ")
+
         # Patterns for inline elements
         bold_re = re.compile(r"\*\*(.+?)\*\*")
-        italic_re = re.compile(r"\*([^*]+?)\*")
+        italic_re = re.compile(r"(\*|_)(.+?)\1")
         code_re = re.compile(r"`([^`]+?)`")
 
         s = text
@@ -116,7 +121,11 @@ def markdown_to_html_node(markdown):
                 tn = TextNode(pre, TextType.TEXT)
                 nodes.append(text_node_to_html_node(tn))
 
-            inner = next_match.group(1)
+            if next_kind == "italic":
+                inner = next_match.group(2)
+            else:
+                inner = next_match.group(1)
+
             if next_kind == "bold":
                 tn = TextNode(inner, TextType.BOLD)
                 nodes.append(text_node_to_html_node(tn))
@@ -151,11 +160,13 @@ def markdown_to_html_node(markdown):
         elif bt == BlockType.CODE:
             lines = block.splitlines()
             first = lines[0].strip() if lines else "`````"
-            lang = first[3:].strip() if len(first) > 3 else ""
             if len(lines) >= 3 and lines[-1].strip().startswith("```"):
                 content = "\n".join(lines[1:-1])
             else:
                 content = "\n".join(lines[1:])
+            # Ensure trailing newline if not present, to match tests
+            if content and not content.endswith("\n"):
+                content += "\n"
             # create a TextNode with CODE type and convert to HtmlNode using helper
             txt_node = TextNode(content, TextType.CODE)
             code_html_node = text_node_to_html_node(txt_node)
